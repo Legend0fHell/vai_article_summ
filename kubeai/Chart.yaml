@@ -1,0 +1,26 @@
+apiVersion: v2
+appVersion: v0.23.1
+dependencies:
+- condition: open-webui.enabled
+  name: open-webui
+  repository: https://helm.openwebui.com/
+  version: 8.19.0
+description: Private Open AI Platform for Kubernetes.
+home: https://www.substratus.ai
+keywords:
+- LLM
+- AI
+maintainers:
+- name: nstogner
+  url: https://www.linkedin.com/in/nstogner/
+- email: sammiestoel@gmail.com
+  name: samos123
+  url: https://www.linkedin.com/in/samstoelinga/
+- name: ffais
+  url: https://github.com/ffais
+- email: marco@cristofanilli.it
+  name: m4oc
+  url: https://www.linkedin.com/in/marcocristofanilli/
+name: kubeai
+type: application
+version: 0.23.1
