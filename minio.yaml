@@ -24,7 +24,6 @@ global:
     ## @param global.security.allowInsecureImages Allows skipping image verification
     allowInsecureImages: true
   ## Compatibility adaptations for Kubernetes platforms
-  ##
   compatibility:
     ## Compatibility adaptations for Openshift
     ##
