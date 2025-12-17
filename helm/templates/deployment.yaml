@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vllm.fullname" . }}
+  labels:
+    app: {{ include "vllm.appLabel" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "vllm.appLabel" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "vllm.appLabel" . }}
+    spec:
+      nodeSelector:
+{{- toYaml .Values.nodeSelector | nindent 8 }}
+      tolerations:
+{{- toYaml .Values.tolerations | nindent 8 }}
+      affinity:
+{{- toYaml .Values.affinity | nindent 8 }}
+
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: {{ include "vllm.pvcName" . }}
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: "2Gi"
+
+      initContainers:
+        - name: model-downloader
+          image: "{{ .Values.initImage.repository }}:{{ .Values.initImage.tag }}"
+          imagePullPolicy: {{ .Values.initImage.pullPolicy }}
+          env:
+            - name: S3_BUCKET
+              value: "{{ .Values.model.s3Bucket }}"
+            - name: S3_PREFIX
+              value: "{{ .Values.model.s3Prefix }}"
+            - name: S3_ENDPOINT
+              value: "{{ .Values.model.s3Endpoint }}"
+            - name: AWS_ACCESS_KEY_ID
+              value: "{{ .Values.model.accessKeyId }}"
+            - name: AWS_SECRET_ACCESS_KEY
+              value: "{{ .Values.model.secretAccessKey }}"
+            - name: AWS_DEFAULT_REGION
+              value: "{{ .Values.model.region }}"
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              set -e;
+              echo "Syncing model from s3://${S3_BUCKET}/${S3_PREFIX} to {{ .Values.model.mountPath }}";
+              aws --endpoint-url "${S3_ENDPOINT}" s3 sync \
+                "s3://${S3_BUCKET}/${S3_PREFIX}" "{{ .Values.model.mountPath }}";
+          volumeMounts:
+            - name: model-storage
+              mountPath: {{ .Values.model.mountPath }}
+
+      containers:
+        - name: {{ include "vllm.appLabel" . }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: VLLM_TARGET_DEVICE
+              value: "cuda"
+            - name: HF_HUB_OFFLINE
+              value: "1"
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              vllm serve {{ .Values.model.mountPath }}
+              --host 0.0.0.0
+              --port {{ .Values.service.targetPort }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          volumeMounts:
+            - name: model-storage
+              mountPath: {{ .Values.model.mountPath }}
+            - name: shm
+              mountPath: /dev/shm
+          resources:
+{{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: 60
+            periodSeconds: 5

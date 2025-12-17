@@ -1,0 +1,55 @@
+modelName: "qwen3-0.6b-gptq-int8"
+
+replicaCount: 1
+
+image:
+  # vLLM gpu docker image
+  repository: hub.vtcc.vn:8989/vllm/vllm-openai
+  tag: v0.12.0
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 24242
+
+resources:
+  requests:
+    cpu: "4"
+    memory: "16Gi"
+    nvidia.com/gpu: "1"
+  limits:
+    cpu: "8"
+    memory: "24Gi"
+    nvidia.com/gpu: "1"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+storage:
+  # If you want to reuse an existing PVC, set pvcName; otherwise the chart creates one
+  pvcName: ""
+  size: "50Gi"
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ""   # leave empty to use default
+
+model:
+  # Where the model will be stored inside containers
+  mountPath: /models/current
+
+  # S3/MinIO details; override per environment/model
+  s3Bucket: ""           # e.g. "llm-models"
+  s3Prefix: ""           # e.g. "qwen3-0.6b-gptq-int8"
+  s3Endpoint: ""         # e.g. "http://minio.minio-ns:9000"
+  region: ""             # e.g. "us-east-1" (MinIO usually ignores but client may need)
+
+  # For production use an existing Secret instead of putting keys here
+  accessKeyId: ""
+  secretAccessKey: ""
+
+initImage:
+  repository: hub.vtcc.vn:8989/amazon/aws-cli
+  tag: latest
+  pullPolicy: IfNotPresent
