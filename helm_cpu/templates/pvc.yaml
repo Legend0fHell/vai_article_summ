@@ -1,0 +1,15 @@
+{{- if not .Values.storage.pvcName }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "vllm.pvcName" . }}
+spec:
+  accessModes:
+{{ toYaml .Values.storage.accessModes | indent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.storage.size }}
+  {{- if .Values.storage.storageClassName }}
+  storageClassName: {{ .Values.storage.storageClassName }}
+  {{- end }}
+{{- end }}

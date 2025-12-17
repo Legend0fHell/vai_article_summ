@@ -1,0 +1,6 @@
+apiVersion: v2
+name: vllm-chart
+description: vLLM GPU inference S3 model sync via initContainer
+type: application
+version: 0.1.0
+appVersion: "0.12.0"
